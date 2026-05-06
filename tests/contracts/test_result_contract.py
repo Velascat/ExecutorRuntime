@@ -1,7 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 from datetime import UTC, datetime
 
 from executor_runtime.contracts.result import RuntimeResult
-from executor_runtime.contracts.status import RuntimeStatus
 
 
 def test_result_defaults_artifacts_to_empty_list() -> None:
@@ -9,7 +9,8 @@ def test_result_defaults_artifacts_to_empty_list() -> None:
     result = RuntimeResult(
         invocation_id="inv-1",
         runtime_name="local",
-        status=RuntimeStatus.SUCCEEDED,
+        runtime_kind="subprocess",
+        status="succeeded",
         exit_code=0,
         started_at=now,
         finished_at=now,

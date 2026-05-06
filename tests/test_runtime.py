@@ -17,6 +17,7 @@ def test_facade_returns_runtime_result(tmp_path: Path) -> None:
     invocation = RuntimeInvocation(
         invocation_id="inv-facade",
         runtime_name="local",
+        runtime_kind="subprocess",
         working_directory=str(tmp_path),
         command=[sys.executable, "-c", "print('facade')"],
         environment={},
