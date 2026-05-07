@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Velascat
 from typing import Protocol
 
 from executor_runtime.contracts.invocation import RuntimeInvocation
