@@ -30,15 +30,16 @@ Generic runtime mechanics:
 - CxRP — orchestration contract
 - a scheduler / queue system / fork manager / agent framework
 
-## Runners (available in v0.1)
+## Runners
 
 | Runner | runtime_kind | What it does |
 |---|---|---|
 | `SubprocessRunner` | `subprocess` | Local subprocess with process-group safety. Default registered runner. |
 | `ManualRunner` | `manual` | Forwards invocation to a caller-supplied dispatcher callable. For out-of-process services where ExecutorRuntime doesn't own the transport. |
 | `HttpRunner` | `http` | Synchronous HTTP request/response. URL/method/body read from `RuntimeInvocation.metadata`. |
+| `AsyncHttpRunner` | `http_async` | Async-shaped HTTP — kickoff (POST `→` 202 + run_id) then poll status URL until a terminal status. Sync from caller's POV. URL templates and JSON paths read from metadata. |
 
-Async-shaped HTTP APIs (202 + poll/stream) are deferred — see backlog.
+SSE streaming for async APIs is still deferred — track-able via the `runtime_kind` vocabulary if/when added.
 
 ## Example usage
 
@@ -96,6 +97,26 @@ runtime.register("http", HttpRunner())
 
 # Invocation metadata carries http.url + http.method + http.body
 result = runtime.run(invocation_with_runtime_kind_http)
+```
+
+### HTTP (async-shaped — 202 + poll)
+
+```python
+from executor_runtime import ExecutorRuntime
+from executor_runtime.runners import AsyncHttpRunner
+
+runtime = ExecutorRuntime()
+runtime.register("http_async", AsyncHttpRunner())
+
+# Invocation metadata carries:
+#   http.url                  — kickoff URL (POST endpoint, 202 → {"run_id": "..."})
+#   http.poll_url_template    — e.g. "https://api/runs/{run_id}"
+#   http.poll_run_id_path     — dotted path to extract run_id from kickoff response
+#   http.poll_status_path     — dotted path to extract status from poll response
+#   http.poll_terminal_states — comma-separated, e.g. "completed,failed,cancelled"
+#   http.poll_success_states  — subset (default: "completed")
+#   http.poll_interval_seconds — default 2.0
+result = runtime.run(invocation_with_runtime_kind_http_async)
 ```
 
 ## Installation
