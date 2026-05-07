@@ -13,11 +13,10 @@ Use this when ``runtime_kind == "manual"`` on the invocation. Future
 """
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from executor_runtime.contracts.invocation import RuntimeInvocation
 from executor_runtime.contracts.result import RuntimeResult
-
 
 Dispatcher = Callable[[RuntimeInvocation], RuntimeResult]
 
