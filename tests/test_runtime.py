@@ -14,6 +14,12 @@ def test_default_facade_uses_subprocess_runner() -> None:
     assert isinstance(runtime.runner, SubprocessRunner)
 
 
+def test_is_registered_reports_registered_kinds() -> None:
+    runtime = ExecutorRuntime()
+    assert runtime.is_registered("subprocess") is True
+    assert runtime.is_registered("manual") is False
+
+
 def test_facade_returns_runtime_result(tmp_path: Path) -> None:
     runtime = ExecutorRuntime()
     invocation = RuntimeInvocation(

@@ -55,6 +55,10 @@ class ExecutorRuntime:
         """Register a runner for a runtime_kind."""
         self._runners[runtime_kind] = runner
 
+    def is_registered(self, runtime_kind: str) -> bool:
+        """Return True if a runner is registered for runtime_kind."""
+        return runtime_kind in self._runners
+
     def run(self, invocation: RuntimeInvocation) -> RuntimeResult:
         runner = self._runners.get(invocation.runtime_kind)
         if runner is None:
