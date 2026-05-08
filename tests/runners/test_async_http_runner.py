@@ -289,3 +289,137 @@ class TestPollLoop:
         result = runner.run(_invocation())  # poll_interval=0.0 in default metadata
         assert result.status == "succeeded"
         assert sleeps == [0.0]
+
+
+# ---------------------------------------------------------------------------
+# 200 kickoff: ack vs synchronous terminal
+# ---------------------------------------------------------------------------
+
+
+class TestKickoff200Ack:
+    """Backends that ack async dispatch with 200 (e.g. Archon's
+    ``{accepted, status: "started"}``) must fall through to the poll loop,
+    not be misinterpreted as a synchronous terminal result.
+    """
+
+    def test_200_with_non_terminal_status_falls_through_to_poll(self):
+        # Kickoff response carries a non-terminal status — runner should poll.
+        client = _scripted_client([
+            httpx.Response(200, json={"accepted": True, "status": "started"}),
+            httpx.Response(200, json={"status": "completed"}),
+        ])
+        # Use a poll URL without {run_id} template so we don't need run_id
+        # extraction from the kickoff body.
+        inv = _invocation(metadata_extra={
+            "http.poll_url_template": "http://example.test/api/runs/by-conv/abc",
+        })
+        # Drop the run-id-path metadata since template has no {run_id}.
+        inv = RuntimeInvocation(**{
+            **inv.model_dump(),
+            "metadata": {
+                k: v for k, v in inv.metadata.items()
+                if k != "http.poll_run_id_path"
+            },
+        })
+        result = _make_runner(client).run(inv)
+        assert result.status == "succeeded"
+
+    def test_200_with_missing_status_field_falls_through_to_poll(self):
+        # Status field absent at poll_status_path — treat as kickoff ack.
+        client = _scripted_client([
+            httpx.Response(200, json={"accepted": True}),
+            httpx.Response(200, json={"status": "completed"}),
+        ])
+        inv = _invocation(metadata_extra={
+            "http.poll_url_template": "http://example.test/api/runs/by-conv/abc",
+        })
+        inv = RuntimeInvocation(**{
+            **inv.model_dump(),
+            "metadata": {
+                k: v for k, v in inv.metadata.items()
+                if k != "http.poll_run_id_path"
+            },
+        })
+        result = _make_runner(client).run(inv)
+        assert result.status == "succeeded"
+
+    def test_200_with_terminal_status_still_treated_as_sync_result(self):
+        # Backward compat: 200 + terminal status keeps the existing sync path.
+        client = _scripted_client([
+            httpx.Response(200, json={"status": "completed"}),
+        ])
+        runner = _make_runner(client)
+        result = runner.run(_invocation())
+        assert result.status == "succeeded"
+
+    def test_200_kickoff_then_404_pending_then_terminal(self):
+        # Realistic Archon flow: 200 ack, then by-worker 404 (run not yet
+        # registered) tolerated via http.poll_pending_codes, then 200 with
+        # terminal status.
+        client = _scripted_client([
+            httpx.Response(200, json={"accepted": True, "status": "started"}),
+            httpx.Response(404, text="not registered yet"),
+            httpx.Response(404, text="not registered yet"),
+            httpx.Response(200, json={"run": {"status": "completed"}}),
+        ])
+        inv = _invocation(metadata_extra={
+            "http.poll_url_template": "http://example.test/api/runs/by-conv/abc",
+            "http.poll_status_path": "run.status",
+            "http.poll_pending_codes": "404",
+        })
+        inv = RuntimeInvocation(**{
+            **inv.model_dump(),
+            "metadata": {
+                k: v for k, v in inv.metadata.items()
+                if k != "http.poll_run_id_path"
+            },
+        })
+        result = _make_runner(client).run(inv)
+        assert result.status == "succeeded"
+
+
+class TestPollPendingCodes:
+    def test_pending_code_keeps_polling(self):
+        client = _scripted_client([
+            httpx.Response(202, json={"run_id": "abc"}),
+            httpx.Response(404, text="pending"),
+            httpx.Response(200, json={"status": "completed"}),
+        ])
+        inv = _invocation(metadata_extra={"http.poll_pending_codes": "404"})
+        result = _make_runner(client).run(inv)
+        assert result.status == "succeeded"
+
+    def test_non_pending_non_200_still_fails(self):
+        client = _scripted_client([
+            httpx.Response(202, json={"run_id": "abc"}),
+            httpx.Response(503, text="upstream"),
+        ])
+        inv = _invocation(metadata_extra={"http.poll_pending_codes": "404"})
+        result = _make_runner(client).run(inv)
+        assert result.status == "failed"
+        assert "503" in (result.error_summary or "")
+
+    def test_pending_codes_must_be_integers(self):
+        client = _scripted_client([])
+        inv = _invocation(metadata_extra={"http.poll_pending_codes": "404,not-a-code"})
+        result = _make_runner(client).run(inv)
+        assert result.status == "rejected"
+        assert "poll_pending_codes" in (result.error_summary or "")
+
+    def test_pending_code_sleeps_between_retries(self):
+        sleeps: list[float] = []
+        client = _scripted_client([
+            httpx.Response(202, json={"run_id": "abc"}),
+            httpx.Response(404, text="pending"),
+            httpx.Response(404, text="pending"),
+            httpx.Response(200, json={"status": "completed"}),
+        ])
+        runner = AsyncHttpRunner(client=client, sleep=sleeps.append)
+        inv = _invocation(metadata_extra={
+            "http.poll_pending_codes": "404",
+            "http.poll_interval_seconds": "0.5",
+        })
+        result = runner.run(inv)
+        assert result.status == "succeeded"
+        # 2 pending 404s + 0 non-terminal 200s before terminal → 2 sleeps.
+        assert sleeps == [0.5, 0.5]

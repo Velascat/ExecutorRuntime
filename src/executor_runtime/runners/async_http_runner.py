@@ -33,6 +33,22 @@ matching RxP metadata typing):
                                       states meaning success (default:
                                       ``completed``).
     - ``http.poll_interval_seconds``: seconds between polls (default ``2.0``).
+    - ``http.poll_pending_codes``   : comma-separated list of HTTP codes that
+                                      mean "still pending, keep polling"
+                                      (e.g. ``404`` for backends that 404
+                                      until the run is registered). Default
+                                      empty (only 200 is accepted; everything
+                                      else fails the poll loop).
+
+Kickoff status codes:
+  - ``202``: standard async accept; proceed to poll loop.
+  - ``200``: if the response body carries a status at ``poll_status_path``
+            whose value is in ``poll_terminal_states``, the kickoff is
+            treated as a synchronous terminal result. Otherwise the 200 is
+            treated as kickoff acknowledgement and the poll loop runs.
+            (Some backends, e.g. Archon, return 200 with a non-terminal
+            status like ``"started"`` to acknowledge dispatch.)
+  - everything else: failure.
 
 Sync from the caller's POV: ``run()`` blocks until a terminal status is
 observed or the invocation timeout elapses. For genuinely concurrent
@@ -119,6 +135,17 @@ class AsyncHttpRunner:
         success_raw = meta.get("http.poll_success_states") or ",".join(_DEFAULT_SUCCESS_STATES)
         success_states = tuple(s.strip() for s in success_raw.split(",") if s.strip())
 
+        pending_raw = meta.get("http.poll_pending_codes") or ""
+        try:
+            pending_codes = tuple(
+                int(s.strip()) for s in pending_raw.split(",") if s.strip()
+            )
+        except ValueError:
+            return _rejected(
+                invocation, started,
+                "http.poll_pending_codes must be comma-separated integers",
+            )
+
         poll_interval = _parse_float(meta.get("http.poll_interval_seconds"), _DEFAULT_POLL_INTERVAL)
         if poll_interval < 0:
             return _rejected(invocation, started, "poll_interval_seconds must be non-negative")
@@ -154,12 +181,20 @@ class AsyncHttpRunner:
                 return _failed(invocation, started, f"kickoff http error: {exc}")
 
             if kickoff_resp.status_code == 200:
-                # Server returned a synchronous result — treat as terminal.
-                return _terminal_from_kickoff(
-                    invocation, started, kickoff_resp,
-                    success_states, poll_status_path,
-                )
-            if kickoff_resp.status_code != 202:
+                # 200 has two modes:
+                #  - server returned a synchronous terminal result (status
+                #    field present and in terminal_states)
+                #  - server acknowledged async dispatch (status field absent
+                #    or non-terminal, e.g. Archon's {accepted, status:"started"})
+                if _is_synchronous_terminal(
+                    kickoff_resp, poll_status_path, terminal_states,
+                ):
+                    return _terminal_from_kickoff(
+                        invocation, started, kickoff_resp,
+                        success_states, poll_status_path,
+                    )
+                # Fall through to poll loop — kickoff was an ack, not a result.
+            elif kickoff_resp.status_code != 202:
                 preview = kickoff_resp.text[:200] if kickoff_resp.text else ""
                 msg = (
                     f"kickoff expected 202 (or 200), got HTTP "
@@ -206,6 +241,12 @@ class AsyncHttpRunner:
                     return _failed(invocation, started, f"poll http error: {exc}")
 
                 if poll_resp.status_code != 200:
+                    if poll_resp.status_code in pending_codes:
+                        # Backend reports "still pending" with this code (e.g.
+                        # Archon's 404 before the run is registered to a
+                        # worker). Sleep and poll again.
+                        self._sleep(poll_interval)
+                        continue
                     preview = poll_resp.text[:200] if poll_resp.text else ""
                     return _failed(
                         invocation, started,
@@ -312,6 +353,31 @@ def _deadline_exceeded(deadline_monotonic: float | None) -> bool:
 
 def _utc_now_iso() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _is_synchronous_terminal(
+    response: Any,
+    poll_status_path: str,
+    terminal_states: tuple[str, ...],
+) -> bool:
+    """Inspect a 200 kickoff response to decide if it's a sync terminal result.
+
+    The kickoff path treats 200 as "synchronous result" only when the response
+    body carries a status at ``poll_status_path`` whose value appears in
+    ``terminal_states``. Otherwise the 200 is interpreted as kickoff
+    acknowledgement and the caller proceeds to the poll loop.
+
+    Returns False on any parse error (treat as kickoff ack — let the poll
+    loop deal with it).
+    """
+    try:
+        payload = response.json()
+    except json.JSONDecodeError:
+        return False
+    status = _extract_path(payload, poll_status_path)
+    if status is None:
+        return False
+    return str(status) in terminal_states
 
 
 def _terminal_from_kickoff(
