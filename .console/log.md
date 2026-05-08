@@ -30,3 +30,7 @@ _Free-form scratch. Clear periodically — old entries can be deleted once no lo
 ---
 
 - DC4 README sections (2026-05-08, on `fix/dc4-readme-sections`): Custodian DC4 (native) flagged the README missing both Quick start and Architecture H2s. Quick start gives a one-paste install + RxP-dispatch example; Architecture summarises the single-entry dispatcher pattern (SubprocessRunner / ManualRunner / HttpRunner) and points at Runners for per-kind detail.
+
+## 2026-05-08 — M1: CHANGELOG.md stub (Keep-a-Changelog format)
+
+Added a minimal CHANGELOG.md so M1 (and M5 format check) pass.
