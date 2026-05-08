@@ -55,3 +55,6 @@ Added .github/workflows/custodian-audit.yml + .hooks/pre-push.
 Both run `custodian-multi --fail-on-findings`. CI is the source of
 truth; pre-push catches regressions before they hit GitHub.
 
+
+## 2026-05-08 — D11 exclusion (sync/async runner pair)
+
