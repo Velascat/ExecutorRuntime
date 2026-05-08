@@ -34,3 +34,9 @@ _Free-form scratch. Clear periodically — old entries can be deleted once no lo
 ## 2026-05-08 — M1: CHANGELOG.md stub (Keep-a-Changelog format)
 
 Added a minimal CHANGELOG.md so M1 (and M5 format check) pass.
+
+## 2026-05-08 — DC8: Reorder README sections to canonical order
+
+Moved 'What this repo is' / 'is not' before 'Quick start' / 'Architecture'
+to satisfy DC8 conventional ordering.
+
