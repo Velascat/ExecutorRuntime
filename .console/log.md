@@ -40,3 +40,11 @@ Added a minimal CHANGELOG.md so M1 (and M5 format check) pass.
 Moved 'What this repo is' / 'is not' before 'Quick start' / 'Architecture'
 to satisfy DC8 conventional ordering.
 
+
+## 2026-05-08 — Custodian round: ER clean (17 → 0)
+
+T1/T6/T7 exclude_paths for contracts/, errors, io/, runners/base
+(integration-tested via subprocess_runner & manual_runner suites).
+C13 allowed for subprocess_runner.py (env-overlay layer).
+Added tests/conftest.py with venv guard (S4).
+
