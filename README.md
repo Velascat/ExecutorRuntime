@@ -9,6 +9,25 @@ RuntimeInvocation → ExecutorRuntime.run → RuntimeResult
                        └─ "http"       → HttpRunner   (sync request/response)
 ```
 
+## Quick start
+
+```bash
+pip install -e .
+```
+
+Dispatch an RxP invocation by `runtime_kind`:
+
+```python
+from executor_runtime import ExecutorRuntime
+result = ExecutorRuntime().run(invocation)   # → RuntimeResult
+```
+
+See **Example usage** below for the full subprocess / manual / http flows.
+
+## Architecture
+
+Single-entry dispatcher: `ExecutorRuntime.run(invocation)` reads `invocation.runtime_kind` and forwards to a registered runner. Three are bundled — `SubprocessRunner` (process-group-safe local exec), `ManualRunner` (caller-supplied callable), `HttpRunner` (kickoff + poll-until-terminal). Every runner returns a normalized RxP `RuntimeResult`. See **Runners** below for the per-kind contract.
+
 ## What this repo is
 
 Generic runtime mechanics:
