@@ -18,6 +18,9 @@ privacy:
 # Audit: per-detector exclusions
 # ---------------------------------------------------------------------------
 audit:
+  cross_repo:
+    platform_manifest_repo: ../PlatformManifest
+
   # subprocess_runner.py constructs the env overlay for each subprocess run —
   # legitimately reads os.environ as the env-mutation layer.
   c13_allowed_paths:

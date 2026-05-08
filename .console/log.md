@@ -5,7 +5,7 @@ _Not a task tracker — that's backlog.md. Keep entries concise and dated._
 
 ## Recent Decisions
 
-_Log significant choices here so they survive context resets._
+- Wire cross_repo config (2026-05-08, on chore/wire-cross-repo-config): Added `audit.cross_repo.platform_manifest_repo: ../PlatformManifest` to `.custodian/config.yaml`. Enables X1/X2/X3 detectors; live run shows 0 findings.
 
 | Decision | Rationale | Date |
 |----------|-----------|------|
