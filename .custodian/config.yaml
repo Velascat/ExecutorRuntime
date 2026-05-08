@@ -13,3 +13,28 @@ privacy:
   private_repo_names:
     - VideoFoundry
     - videofoundry
+
+# ---------------------------------------------------------------------------
+# Audit: per-detector exclusions
+# ---------------------------------------------------------------------------
+audit:
+  # subprocess_runner.py constructs the env overlay for each subprocess run —
+  # legitimately reads os.environ as the env-mutation layer.
+  c13_allowed_paths:
+    - "src/executor_runtime/runners/subprocess_runner.py"
+  exclude_paths:
+    T1:
+      - "src/executor_runtime/contracts/**"
+      - src/executor_runtime/errors.py
+      - "src/executor_runtime/io/**"
+      - src/executor_runtime/runners/base.py
+    T6:
+      - "src/executor_runtime/contracts/**"
+      - src/executor_runtime/errors.py
+      - "src/executor_runtime/io/**"
+      - src/executor_runtime/runners/base.py
+    T7:
+      - "src/executor_runtime/contracts/**"
+      - src/executor_runtime/errors.py
+      - "src/executor_runtime/io/**"
+      - src/executor_runtime/runners/base.py
