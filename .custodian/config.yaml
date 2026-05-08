@@ -38,3 +38,7 @@ audit:
       - src/executor_runtime/errors.py
       - "src/executor_runtime/io/**"
       - src/executor_runtime/runners/base.py
+    D11:
+      # http_runner / async_http_runner share _build_content_kwargs by
+      # design — sync/async pair of the same runner shape.
+      - "src/executor_runtime/runners/**"
