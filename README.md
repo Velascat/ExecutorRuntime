@@ -1,6 +1,6 @@
 # ExecutorRuntime
 
-`ExecutorRuntime` is the generic runtime execution layer for [RxP](https://github.com/Velascat/RxP)-shaped invocations. It dispatches by `runtime_kind` to a registered runner and returns a normalized RxP `RuntimeResult`.
+`ExecutorRuntime` is the generic runtime execution layer for [RxP](https://github.com/ProtocolWarden/RxP)-shaped invocations. It dispatches by `runtime_kind` to a registered runner and returns a normalized RxP `RuntimeResult`.
 
 ```text
 RuntimeInvocation → ExecutorRuntime.run → RuntimeResult
@@ -149,7 +149,7 @@ pip install "executor-runtime[http]"
 For development:
 
 ```bash
-git clone https://github.com/Velascat/ExecutorRuntime.git
+git clone https://github.com/ProtocolWarden/ExecutorRuntime.git
 cd ExecutorRuntime
 pip install -e ".[dev,http]"
 pytest -q
@@ -163,7 +163,7 @@ ExecutorRuntime consumes RxP types directly — no parallel dataclasses:
 from rxp.contracts import RuntimeInvocation, RuntimeResult, ArtifactDescriptor
 ```
 
-See [RxP](https://github.com/Velascat/RxP) for the contract definitions.
+See [RxP](https://github.com/ProtocolWarden/RxP) for the contract definitions.
 
 ## License
 

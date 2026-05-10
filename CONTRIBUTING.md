@@ -11,7 +11,7 @@ ExecutorRuntime is the runtime execution layer for RxP-style invocation requests
 ## Development Setup
 
 ```bash
-git clone https://github.com/Velascat/ExecutorRuntime.git
+git clone https://github.com/ProtocolWarden/ExecutorRuntime.git
 cd ExecutorRuntime
 python3 -m venv .venv
 source .venv/bin/activate

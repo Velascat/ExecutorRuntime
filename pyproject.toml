@@ -9,7 +9,7 @@ description = "Runtime execution layer for normalized RxP invocations"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "rxp @ git+https://github.com/Velascat/RxP.git",
+  "rxp @ git+https://github.com/ProtocolWarden/RxP.git",
 ]
 
 [project.optional-dependencies]

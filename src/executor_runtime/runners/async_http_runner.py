@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2026 Velascat
+# Copyright (C) 2026 ProtocolWarden
 """AsyncHttpRunner — kickoff (202) + poll-until-terminal HTTP runner.
 
 For runtimes that kick off work via an HTTP endpoint and surface
