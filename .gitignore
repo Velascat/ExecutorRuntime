@@ -12,3 +12,5 @@ __pycache__/
 !.console/backlog.md
 !.console/guidelines.md
 !.console/log.md
+CLAUDE.md
+.custodian/tmp*.yaml
